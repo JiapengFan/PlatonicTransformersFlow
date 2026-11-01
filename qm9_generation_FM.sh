@@ -14,7 +14,7 @@ module load 2025
 module load Anaconda3/2025.06-1
 source "$(conda info --base)/etc/profile.d/conda.sh"
 
-PROJECT_DIR="$HOME/PlatonicTransformers"
+PROJECT_DIR="$HOME/PlatonicTransformersFlow"
 QM9_DATA_DIR="${QM9_DATA_DIR:-$PROJECT_DIR/datasets/qm9_gen}"
 S_CHURN="${S_CHURN:-0.0}"
 COMPILE="${COMPILE:-false}"

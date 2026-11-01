@@ -339,12 +339,25 @@ class QM9FMModel(pl.LightningModule):
         return None
 
     def on_test_epoch_end(self):
+        print("Entered on_test_epoch_end: starting evaluation", flush=True)
         self._evaluate_samples(10000, "test")
+        print("Evaluation finished", flush=True)
 
     def _evaluate_samples(self, count, phase):
         molecules = []
         for start in range(0, count, self.config.training.batch_size):
-            molecules.extend(self.sample(min(self.config.training.batch_size, count - start)))
+            batch_count = min(self.config.training.batch_size, count - start)
+            print(
+                f"[{phase}] Starting sampling batch: {start}/{count}",
+                flush=True,
+            )
+            molecules.extend(self.sample(batch_count))
+            print(
+                f"[{phase}] Generated {len(molecules)}/{count} molecules",
+                flush=True,
+            )
+
+        print(f"[{phase}] Starting stability analysis", flush=True)
         atoms = mols = total_atoms = total_mols = 0
         for molecule in molecules:
             stable, stable_atoms, atom_count = check_stability(*molecule)
@@ -356,6 +369,8 @@ class QM9FMModel(pl.LightningModule):
             f"{phase}_edm/atom_stability": 100 * atoms / max(1, total_atoms),
             f"{phase}_edm/molecule_stability": 100 * mols / max(1, total_mols),
         }
+
+        print(f"[{phase}] Starting RDKit analysis", flush=True)
         if self.edm_analyzer:
             (validity, uniqueness, novelty), _ = self.edm_analyzer.evaluate(molecules)
             results.update({f"{phase}_edm/validity": validity,
@@ -380,6 +395,18 @@ class QM9FMModel(pl.LightningModule):
 
 def main(config):
     print_config(config, "QM9 Flow Matching Configuration")
+
+    # Identical to main_qm9_gen.py.
+    torch.set_float32_matmul_precision(
+        config.system.get("float32_matmul_precision", "high")
+    )
+    print(
+        "Lightning precision:", config.system.precision,
+        "| Effective float32 matmul precision:",
+        torch.get_float32_matmul_precision(),
+        flush=True,
+    )
+
     pl.seed_everything(config.seed)
     train_loader, val_loader, sampler, edm_smiles, zatom_smiles, dataset_info = load_data(config)
     accelerator = "gpu" if config.system.gpus > 0 and torch.cuda.is_available() else "cpu"

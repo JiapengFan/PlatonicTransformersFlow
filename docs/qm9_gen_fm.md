@@ -69,6 +69,15 @@ directly on a uniform $t$ grid from `fm_t_start` (default 0, pure noise) to 1, w
 # train (then tests the last checkpoint); LR, S_CHURN and SAMPLER are env overrides
 LR=5e-4 S_CHURN=0.0 SAMPLER=edm sbatch qm9_generation_FM.sh
 
+# New training, use this one for correct LR
+QM9_DATA_DIR="$HOME/PlatonicTransformersFlow/datasets/qm9_gen" \
+WANDB_BASE_URL=https://api.forge.coreweave.com \
+S_CHURN=0.0 SAMPLER=edm \
+sbatch --export=ALL qm9_generation_FM.sh \
+    --optimizer.lr=0.0005 \
+    --logging.wandb_identity=jiapeng-fan-university-of-amsterdam \
+    --training.epochs=200
+
 # evaluate a checkpoint with the plain FM ODE sampler (extra flags are passed to the script)
 SAMPLER=fm sbatch qm9_generation_FM.sh \
     --testing.test_ckpt=path/to/last.ckpt --testing.metrics_out=out.json \
